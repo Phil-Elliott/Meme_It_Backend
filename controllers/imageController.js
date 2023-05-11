@@ -2,12 +2,32 @@ import Image from "../models/imageModel.js";
 
 export const getImage = async (req, res, next) => {
   try {
-    const image = await Image.findOne({ date: Date.now() });
+    const { date } = req.query;
+
+    if (!date) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Date query parameter is required!",
+      });
+    }
+
+    const searchDate = new Date(date);
+    searchDate.setHours(0, 0, 0, 0);
+
+    const nextDate = new Date(searchDate);
+    nextDate.setDate(searchDate.getDate() + 1);
+
+    const image = await Image.findOne({
+      date: {
+        $gte: searchDate,
+        $lt: nextDate,
+      },
+    });
 
     if (!image) {
       return res.status(404).json({
         status: "fail",
-        message: "No image found with that ID!",
+        message: "No image found with the provided date!",
       });
     }
 
@@ -26,14 +46,34 @@ export const getImage = async (req, res, next) => {
 };
 
 export const addImage = async (req, res, next) => {
-  if (!req.body) {
+  if (!req.body || !req.body.date) {
     return res.status(400).json({
       status: "fail",
-      message: "No data sent!",
+      message: "No data or date sent!",
     });
   }
 
   try {
+    const inputDate = new Date(req.body.date);
+    inputDate.setHours(0, 0, 0, 0);
+
+    const nextDate = new Date(inputDate);
+    nextDate.setDate(inputDate.getDate() + 1);
+
+    const existingImage = await Image.findOne({
+      date: {
+        $gte: inputDate,
+        $lt: nextDate,
+      },
+    });
+
+    if (existingImage) {
+      return res.status(400).json({
+        status: "fail",
+        message: "An image already exists for the specified date!",
+      });
+    }
+
     const newImage = await Image.create(req.body);
 
     res.status(201).json({
@@ -46,16 +86,34 @@ export const addImage = async (req, res, next) => {
     next(err);
   }
 };
-
 export const deleteImage = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const image = await Image.findByIdAndDelete(id);
+    const { date } = req.query;
 
-    if (!image) {
+    if (!date) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Date query parameter is required!",
+      });
+    }
+
+    const searchDate = new Date(date);
+    searchDate.setHours(0, 0, 0, 0);
+
+    const nextDate = new Date(searchDate);
+    nextDate.setDate(searchDate.getDate() + 1);
+
+    const deletedImage = await Image.findOneAndDelete({
+      date: {
+        $gte: searchDate,
+        $lt: nextDate,
+      },
+    });
+
+    if (!deletedImage) {
       return res.status(404).json({
         status: "fail",
-        message: "No image found with that ID!",
+        message: "No image found with the provided date!",
       });
     }
 

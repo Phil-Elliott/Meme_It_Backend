@@ -9,7 +9,6 @@ import {
 const router = express.Router();
 
 router.route("/").get(getAllMemes).post(addMeme);
-router.route("/:id").delete(deleteMeme);
-router.route("/like/:id").patch(toggleLike);
+router.route("/:id").delete(deleteMeme).patch(toggleLike);
 
 export default router;
